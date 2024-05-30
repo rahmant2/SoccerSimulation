@@ -1,20 +1,18 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
-
-
-
-
-class GamePanel extends JPanel {
+class GamePanel extends JPanel implements ActionListener {
     private final int FIELD_WIDTH = 800;
     private final int FIELD_HEIGHT = 600;
     private final int BALL_SIZE = 20;
     private final int PLAYER_SIZE = 30;
     private final int GOAL_WIDTH = 100;
     private final int GOAL_HEIGHT = 200;
-    private final int MOVE_AMOUNT = 10;
+    private final int MOVE_AMOUNT = 5;
     private int ballX = FIELD_WIDTH / 2 - BALL_SIZE / 2;
     private int ballY = FIELD_HEIGHT / 2 - BALL_SIZE / 2;
     private int player1X = 100;
@@ -24,8 +22,46 @@ class GamePanel extends JPanel {
     private int scorePlayer1 = 0;
     private int scorePlayer2 = 0;
 
+    private boolean upPressed = false;
+    private boolean downPressed = false;
+    private boolean leftPressed = false;
+    private boolean rightPressed = false;
+    private boolean wPressed = false;
+    private boolean sPressed = false;
+    private boolean aPressed = false;
+    private boolean dPressed = false;
+
+    private Timer timer;
+
     public GamePanel() {
         setBackground(Color.GREEN);
+        setFocusable(true);
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                handleKeyPress(e.getKeyCode(), true);
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                handleKeyPress(e.getKeyCode(), false);
+            }
+        });
+        timer = new Timer(20, this);
+        timer.start();
+    }
+
+    private void handleKeyPress(int keyCode, boolean pressed) {
+        switch (keyCode) {
+            case KeyEvent.VK_W -> wPressed = pressed;
+            case KeyEvent.VK_S -> sPressed = pressed;
+            case KeyEvent.VK_A -> aPressed = pressed;
+            case KeyEvent.VK_D -> dPressed = pressed;
+            case KeyEvent.VK_UP -> upPressed = pressed;
+            case KeyEvent.VK_DOWN -> downPressed = pressed;
+            case KeyEvent.VK_LEFT -> leftPressed = pressed;
+            case KeyEvent.VK_RIGHT -> rightPressed = pressed;
+        }
     }
 
     @Override
@@ -69,63 +105,59 @@ class GamePanel extends JPanel {
         g.drawString("Player 2: " + scorePlayer2, FIELD_WIDTH - 200, 30);
     }
 
-    public void moveElements(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_W:
-                player1Y -= MOVE_AMOUNT;
-                break;
-            case KeyEvent.VK_S:
-                player1Y += MOVE_AMOUNT;
-                break;
-            case KeyEvent.VK_A:
-                player1X -= MOVE_AMOUNT;
-                break;
-            case KeyEvent.VK_D:
-                player1X += MOVE_AMOUNT;
-                break;
-            case KeyEvent.VK_UP:
-                player2Y -= MOVE_AMOUNT;
-                break;
-            case KeyEvent.VK_DOWN:
-                player2Y += MOVE_AMOUNT;
-                break;
-            case KeyEvent.VK_LEFT:
-                player2X -= MOVE_AMOUNT;
-                break;
-            case KeyEvent.VK_RIGHT:
-                player2X += MOVE_AMOUNT;
-                break;
-        }
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        moveElements(e);
+        repaint();
+    }
+
+    private void moveElements(ActionEvent e) {
+        if (wPressed) player1Y -= MOVE_AMOUNT;
+        if (sPressed) player1Y += MOVE_AMOUNT;
+        if (aPressed) player1X -= MOVE_AMOUNT;
+        if (dPressed) player1X += MOVE_AMOUNT;
+        if (upPressed) player2Y -= MOVE_AMOUNT;
+        if (downPressed) player2Y += MOVE_AMOUNT;
+        if (leftPressed) player2X -= MOVE_AMOUNT;
+        if (rightPressed) player2X += MOVE_AMOUNT;
+
+        // Ensure players stay within boundaries
+        player1X = Math.max(0, Math.min(player1X, FIELD_WIDTH - PLAYER_SIZE));
+        player1Y = Math.max(0, Math.min(player1Y, FIELD_HEIGHT - PLAYER_SIZE));
+        player2X = Math.max(0, Math.min(player2X, FIELD_WIDTH - PLAYER_SIZE));
+        player2Y = Math.max(0, Math.min(player2Y, FIELD_HEIGHT - PLAYER_SIZE));
 
         // Move ball based on players' positions
         if (Math.abs(ballX - player1X) < PLAYER_SIZE && Math.abs(ballY - player1Y) < PLAYER_SIZE) {
             ballX = player1X + PLAYER_SIZE;
-            ballY = player1Y + PLAYER_SIZE / 2;
+            ballY = player1Y + PLAYER_SIZE / 2 - BALL_SIZE / 2;
         }
         if (Math.abs(ballX - player2X) < PLAYER_SIZE && Math.abs(ballY - player2Y) < PLAYER_SIZE) {
             ballX = player2X - BALL_SIZE;
-            ballY = player2Y + PLAYER_SIZE / 2;
+            ballY = player2Y + PLAYER_SIZE / 2 - BALL_SIZE / 2;
         }
 
-        // Collision with field boundaries
+        // Collision with field boundaries and scoring
         if (ballX < 0) {
             scorePlayer2++;
-            resetBall();
+            resetPositions();
         } else if (ballX > FIELD_WIDTH - BALL_SIZE) {
             scorePlayer1++;
-            resetBall();
+            resetPositions();
         }
         if (ballY < 0) {
             ballY = 0;
         } else if (ballY > FIELD_HEIGHT - BALL_SIZE) {
             ballY = FIELD_HEIGHT - BALL_SIZE;
         }
-
-        repaint();
     }
 
-    private void resetBall() {
+    private void resetPositions() {
         ballX = FIELD_WIDTH / 2 - BALL_SIZE / 2;
         ballY = FIELD_HEIGHT / 2 - BALL_SIZE / 2;
+        player1X = 100;
+        player1Y = FIELD_HEIGHT / 2 - PLAYER_SIZE / 2;
+        player2X = FIELD_WIDTH - 100 - PLAYER_SIZE;
+        player2Y = FIELD_HEIGHT / 2 - PLAYER_SIZE / 2;
     }
 }

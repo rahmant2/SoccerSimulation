@@ -1,7 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 
 public class SoccerSimulation extends JFrame {
     private GamePanel gamePanel;
@@ -14,12 +12,6 @@ public class SoccerSimulation extends JFrame {
 
         gamePanel = new GamePanel();
         add(gamePanel);
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                gamePanel.moveElements(e);
-            }
-        });
 
         setVisible(true);
     }
@@ -28,3 +20,4 @@ public class SoccerSimulation extends JFrame {
         SwingUtilities.invokeLater(SoccerSimulation::new);
     }
 }
+
