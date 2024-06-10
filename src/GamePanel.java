@@ -4,12 +4,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.Random;
 
 class GamePanel extends JPanel implements ActionListener {
     private final int FIELD_WIDTH = 800;
     private final int FIELD_HEIGHT = 600;
     private final int BALL_SIZE = 20;
     private final int PLAYER_SIZE = 30;
+    private final int OBSTACLE_SIZE = 20;
     private final int GOAL_WIDTH = 100;
     private final int GOAL_HEIGHT = 200;
     private final int MOVE_AMOUNT = 5;
@@ -32,6 +34,9 @@ class GamePanel extends JPanel implements ActionListener {
     private boolean dPressed = false;
 
     private Timer timer;
+    private Obstacle[] player1Obstacles;
+    private Obstacle[] player2Obstacles;
+    private Random random;
 
     public GamePanel() {
         setBackground(Color.GREEN);
@@ -49,6 +54,15 @@ class GamePanel extends JPanel implements ActionListener {
         });
         timer = new Timer(20, this);
         timer.start();
+
+        player1Obstacles = new Obstacle[4];
+        player2Obstacles = new Obstacle[4];
+        random = new Random();
+
+        for (int i = 0; i < 4; i++) {
+            player1Obstacles[i] = new Obstacle(random.nextInt(FIELD_WIDTH / 2), random.nextInt(FIELD_HEIGHT), OBSTACLE_SIZE, OBSTACLE_SIZE, MOVE_AMOUNT);
+            player2Obstacles[i] = new Obstacle(FIELD_WIDTH / 2 + random.nextInt(FIELD_WIDTH / 2), random.nextInt(FIELD_HEIGHT), OBSTACLE_SIZE, OBSTACLE_SIZE, MOVE_AMOUNT);
+        }
     }
 
     private void handleKeyPress(int keyCode, boolean pressed) {
@@ -70,6 +84,7 @@ class GamePanel extends JPanel implements ActionListener {
         drawField(g);
         drawBall(g);
         drawPlayers(g);
+        drawObstacles(g);
         drawGoals(g);
         drawScore(g);
     }
@@ -92,6 +107,17 @@ class GamePanel extends JPanel implements ActionListener {
         g.fillRect(player2X, player2Y, PLAYER_SIZE, PLAYER_SIZE);
     }
 
+    private void drawObstacles(Graphics g) {
+        g.setColor(Color.BLUE);
+        for (Obstacle obstacle : player1Obstacles) {
+            g.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        }
+        g.setColor(Color.RED);
+        for (Obstacle obstacle : player2Obstacles) {
+            g.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        }
+    }
+
     private void drawGoals(Graphics g) {
         g.setColor(Color.WHITE);
         g.fillRect(0, FIELD_HEIGHT / 2 - GOAL_HEIGHT / 2, 10, GOAL_HEIGHT); // Left goal
@@ -107,11 +133,11 @@ class GamePanel extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        moveElements(e);
+        moveElements();
         repaint();
     }
 
-    private void moveElements(ActionEvent e) {
+    private void moveElements() {
         if (wPressed) player1Y -= MOVE_AMOUNT;
         if (sPressed) player1Y += MOVE_AMOUNT;
         if (aPressed) player1X -= MOVE_AMOUNT;
@@ -127,14 +153,52 @@ class GamePanel extends JPanel implements ActionListener {
         player2X = Math.max(0, Math.min(player2X, FIELD_WIDTH - PLAYER_SIZE));
         player2Y = Math.max(0, Math.min(player2Y, FIELD_HEIGHT - PLAYER_SIZE));
 
+        // Move obstacles
+        for (Obstacle obstacle : player1Obstacles) {
+            obstacle.move();
+            if (obstacle.x < 0 || obstacle.x > FIELD_WIDTH / 2 - OBSTACLE_SIZE) {
+                obstacle.reverseDirection();
+            }
+        }
+
+        for (Obstacle obstacle : player2Obstacles) {
+            obstacle.move();
+            if (obstacle.x < FIELD_WIDTH / 2 || obstacle.x > FIELD_WIDTH - OBSTACLE_SIZE) {
+                obstacle.reverseDirection();
+            }
+        }
+
+        // Check for collisions with obstacles
+        for (Obstacle obstacle : player2Obstacles) {
+            if (player1X + PLAYER_SIZE > obstacle.x && player1X < obstacle.x + OBSTACLE_SIZE && player1Y + PLAYER_SIZE > obstacle.y && player1Y < obstacle.y + OBSTACLE_SIZE) {
+                ballX = player2X - BALL_SIZE;
+                ballY = player2Y + PLAYER_SIZE / 2 - BALL_SIZE / 2;
+            }
+        }
+
+        for (Obstacle obstacle : player1Obstacles) {
+            if (player2X + PLAYER_SIZE > obstacle.x && player2X < obstacle.x + OBSTACLE_SIZE && player2Y + PLAYER_SIZE > obstacle.y && player2Y < obstacle.y + OBSTACLE_SIZE) {
+                ballX = player1X + PLAYER_SIZE;
+                ballY = player1Y + PLAYER_SIZE / 2 - BALL_SIZE / 2;
+            }
+        }
+
         // Move ball based on players' positions
         if (Math.abs(ballX - player1X) < PLAYER_SIZE && Math.abs(ballY - player1Y) < PLAYER_SIZE) {
             ballX = player1X + PLAYER_SIZE;
             ballY = player1Y + PLAYER_SIZE / 2 - BALL_SIZE / 2;
+            if (upPressed) player2Y -= MOVE_AMOUNT+3;
+            if (downPressed) player2Y += MOVE_AMOUNT+3;
+            if (leftPressed) player2X -= MOVE_AMOUNT+3;
+            if (rightPressed) player2X += MOVE_AMOUNT+3;
         }
         if (Math.abs(ballX - player2X) < PLAYER_SIZE && Math.abs(ballY - player2Y) < PLAYER_SIZE) {
             ballX = player2X - BALL_SIZE;
             ballY = player2Y + PLAYER_SIZE / 2 - BALL_SIZE / 2;
+            if (wPressed) player1Y -= MOVE_AMOUNT+3;
+            if (sPressed) player1Y += MOVE_AMOUNT+3;
+            if (aPressed) player1X -= MOVE_AMOUNT+3;
+            if (dPressed) player1X += MOVE_AMOUNT+3;
         }
 
         // Collision with field boundaries and scoring
@@ -160,4 +224,35 @@ class GamePanel extends JPanel implements ActionListener {
         player2X = FIELD_WIDTH - 100 - PLAYER_SIZE;
         player2Y = FIELD_HEIGHT / 2 - PLAYER_SIZE / 2;
     }
+
+    class Obstacle {
+        int x, y, width, height, moveAmount;
+        boolean moveRight;
+
+        public Obstacle(int x, int y, int width, int height, int moveAmount) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.moveAmount = moveAmount;
+            this.moveRight = true;
+        }
+
+        public void move() {
+            if (moveRight) {
+                x += moveAmount;
+            } else {
+                x -= moveAmount;
+            }
+        }
+
+        public void reverseDirection() {
+            moveRight = !moveRight;
+        }
+    }
 }
+
+
+
+
+
