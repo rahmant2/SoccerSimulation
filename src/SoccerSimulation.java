@@ -1,23 +1,20 @@
 import javax.swing.*;
 import java.awt.*;
 
-public class SoccerSimulation extends JFrame {
-    private GamePanel gamePanel;
+import javax.swing.*;
 
-    public SoccerSimulation() {
-        setTitle("2D Soccer Simulation");
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-
-        gamePanel = new GamePanel();
-        add(gamePanel);
-
-        setVisible(true);
-    }
-
+public class SoccerSimulation {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(SoccerSimulation::new);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                JFrame mainFrame = new JFrame("Game Menu");
+                mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                mainFrame.getContentPane().add(new MainMenu(mainFrame));
+                mainFrame.pack();
+                mainFrame.setLocationRelativeTo(null); // Center the frame
+                mainFrame.setVisible(true);
+            }
+        });
     }
 }
-
