@@ -5,6 +5,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Random;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import java.io.File;
 
  public class GamePanel extends JPanel implements ActionListener {
     // Constants and variables
@@ -43,12 +47,22 @@ import java.util.Random;
     private Obstacle[] player1Obstacles;
     private Obstacle[] player2Obstacles;
     private Random random;
+    private Clip goalScoredSound;
 
     private JFrame mainFrame;
     private MainMenu mainMenu;
 
      public GamePanel(JFrame mainFrame) {
          this.mainFrame = mainFrame;
+
+         try {
+             File soundFile = new File("sound.wav"); // Replace with your sound file path
+             AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundFile);
+             goalScoredSound = AudioSystem.getClip();
+             goalScoredSound.open(audioInputStream);
+         } catch (Exception e) {
+             e.printStackTrace();
+         }
 
          // Get screen dimensions for full screen mode
          Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -139,16 +153,29 @@ import java.util.Random;
             shoot2Pressed = false; // Reset the shoot flag
         }
     }
+     private void playGoalScoredSound() {
+         try {
+             if (goalScoredSound != null) {
+                 goalScoredSound.stop(); // Stop previous instance if it's still playing
+                 goalScoredSound.setFramePosition(0); // Rewind to the beginning
+                 goalScoredSound.start(); // Play the sound clip
+             }
+         } catch (Exception e) {
+             e.printStackTrace();
+         }
+     }
 
-    private void checkGoalScored(int player) {
-        if (ballX < 0 && player == 2) {
-            scorePlayer2++;
-            resetPositions();
-        } else if (ballX > FIELD_WIDTH - BALL_SIZE && player == 1) {
-            scorePlayer1++;
-            resetPositions();
-        }
-    }
+     private void checkGoalScored(int player) {
+         if (ballX < 0 && player == 2) {
+             scorePlayer2++;
+             playGoalScoredSound();
+             resetPositions();
+         } else if (ballX > FIELD_WIDTH - BALL_SIZE && player == 1) {
+             scorePlayer1++;
+             playGoalScoredSound();
+             resetPositions();
+         }
+     }
      @Override
      protected void paintComponent(Graphics g) {
          super.paintComponent(g);
